@@ -57,8 +57,6 @@ def main():
         death_timer = 0.0
         shake_timer = 0.0
         for ghost in ghosts:
-            ghost.frame_index = 0
-            ghost.tick_counter = 0
             ghost.spawn_timer = 0.0
             ghost.alive = False
             ghost.trail = []
@@ -108,7 +106,7 @@ def main():
             game_time += dt
             recorder.record(player.x, player.y)
             for ghost in ghosts:
-                ghost.update(dt)
+                ghost.update(dt, game_time)
             ghost_count = len(ghosts)
 
             # Collision check
@@ -126,10 +124,11 @@ def main():
         elif state == GameState.DYING:
             death_timer += dt
             if death_timer >= DEATH_FREEZE_TIME:
-                # Create ghost from this run's recording
+                # Create ghost with segment-based replay
                 recording = recorder.get_recording()
                 if len(recording) > 10:
-                    ghosts.append(Ghost(recording.copy()))
+                    segment_index = len(ghosts)
+                    ghosts.append(Ghost(recording.copy(), segment_index=segment_index))
                 # Update best score
                 if game_time > best_score:
                     best_score = game_time
@@ -166,7 +165,7 @@ def main():
         elif state == GameState.PLAYING:
             arena.render(screen, camera_offset)
             for ghost in ghosts:
-                ghost.render(screen, camera_offset)
+                ghost.render(screen, camera_offset, game_time)
             player.render(screen, camera_offset)
 
             # HUD
@@ -195,14 +194,14 @@ def main():
                 draw_text(screen, f"REC full: {recorder.is_full()}", 20, 170,
                           font_small, COLOR_TEXT_DIM)
                 for i, ghost in enumerate(ghosts):
-                    draw_text(screen, f"Ghost {i}: frame={ghost.frame_index} alive={ghost.alive}",
+                    draw_text(screen, f"Ghost {i}: seg={ghost.segment_index} alive={ghost.alive}",
                               20, 200 + i * 30, font_small, COLOR_TEXT_DIM)
 
         elif state == GameState.DYING:
             # Render frozen game frame + white flash
             arena.render(screen, camera_offset)
             for ghost in ghosts:
-                ghost.render(screen, camera_offset)
+                ghost.render(screen, camera_offset, game_time)
             player.render(screen, camera_offset)
 
             # White flash overlay (fades out over DEATH_FREEZE_TIME)
@@ -254,7 +253,7 @@ def main():
             # Render frozen game frame
             arena.render(screen, camera_offset)
             for ghost in ghosts:
-                ghost.render(screen, camera_offset)
+                ghost.render(screen, camera_offset, game_time)
             player.render(screen, camera_offset)
 
             # Dark overlay

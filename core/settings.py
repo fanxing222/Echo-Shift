@@ -24,9 +24,10 @@ PLAYER_SIZE = 32
 PLAYER_SPEED = 320  # pixels per second
 
 # Ghost
-GHOST_SPAWN_DELAY = 1.0  # seconds before ghost becomes lethal
-GHOST_TRAIL_LENGTH = 5   # number of trail positions to keep
-SEED_GHOST_TIMER = 15.0  # seconds before first-run auto-death (seeds the ghost loop)
+GHOST_SPAWN_DELAY = 1.0       # seconds before ghost becomes lethal
+GHOST_TRAIL_LENGTH = 5        # number of trail positions to keep
+GHOST_SEGMENT_DURATION = 5.0  # seconds per replay segment
+SEED_GHOST_TIMER = 15.0       # seconds before first-run auto-death (seeds the ghost loop)
 
 # Timing
 DEATH_FREEZE_TIME = 0.3     # seconds of freeze-frame on death
