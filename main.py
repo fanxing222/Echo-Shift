@@ -45,6 +45,24 @@ def main():
     death_timer = 0.0
     shake_timer = 0.0
     camera_offset = (0, 0)
+    best_score = 0.0
+
+    def reset_game():
+        """Unified reset: clears run state, preserves ghosts and best score."""
+        nonlocal state, game_time, ghost_count, death_timer, shake_timer
+        player.reset()
+        recorder.reset()
+        game_time = 0.0
+        ghost_count = 0
+        death_timer = 0.0
+        shake_timer = 0.0
+        for ghost in ghosts:
+            ghost.frame_index = 0
+            ghost.tick_counter = 0
+            ghost.spawn_timer = 0.0
+            ghost.alive = False
+            ghost.trail = []
+        state = GameState.PLAYING
 
     # --- Game Loop ---
     running = True
@@ -57,32 +75,32 @@ def main():
                 running = False
 
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
+                # Q — quit from any state
+                if event.key == pygame.K_q:
                     running = False
 
+                # R — restart from any state (except MENU)
+                if event.key == pygame.K_r:
+                    if state != GameState.MENU:
+                        reset_game()
+
+                # ESC — pause toggle or quit from MENU
+                if event.key == pygame.K_ESCAPE:
+                    if state == GameState.MENU:
+                        running = False
+                    elif state == GameState.PLAYING:
+                        state = GameState.PAUSED
+                    elif state == GameState.PAUSED:
+                        state = GameState.PLAYING
+                    elif state == GameState.GAME_OVER:
+                        state = GameState.MENU
+
+                # SPACE — start / restart
                 if event.key == pygame.K_SPACE:
                     if state == GameState.MENU:
-                        state = GameState.PLAYING
-                        player.reset()
-                        game_time = 0.0
-                        ghost_count = 0
-                        death_timer = 0.0
-                        shake_timer = 0.0
-                        recorder.reset()
+                        reset_game()
                     elif state == GameState.GAME_OVER:
-                        state = GameState.PLAYING
-                        player.reset()
-                        game_time = 0.0
-                        ghost_count = 0
-                        death_timer = 0.0
-                        shake_timer = 0.0
-                        recorder.reset()
-                        for ghost in ghosts:
-                            ghost.frame_index = 0
-                            ghost.tick_counter = 0
-                            ghost.spawn_timer = 0.0
-                            ghost.alive = False
-                            ghost.trail = []
+                        reset_game()
 
         # --- Update ---
         if state == GameState.PLAYING:
@@ -112,6 +130,9 @@ def main():
                 recording = recorder.get_recording()
                 if len(recording) > 10:
                     ghosts.append(Ghost(recording.copy()))
+                # Update best score
+                if game_time > best_score:
+                    best_score = game_time
                 state = GameState.GAME_OVER
 
         # Screen shake
@@ -129,11 +150,18 @@ def main():
         if state == GameState.MENU:
             screen.fill((10, 10, 10))
             draw_text(screen, "ECHO SHIFT",
-                      WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 40,
+                      WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 60,
                       font_title, COLOR_PLAYER, center=True)
+            draw_text(screen, "Your past becomes your enemy",
+                      WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 10,
+                      font_small, COLOR_TEXT_DIM, center=True)
             draw_text(screen, "Press SPACE to Start",
-                      WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 40,
+                      WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 60,
                       font_medium, COLOR_TEXT, center=True)
+            if best_score > 0:
+                draw_text(screen, f"Best: {best_score:.1f}s",
+                          WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 110,
+                          font_small, COLOR_TEXT_DIM, center=True)
 
         elif state == GameState.PLAYING:
             arena.render(screen, camera_offset)
@@ -146,8 +174,9 @@ def main():
                       font_small, COLOR_TEXT)
             draw_text(screen, f"Ghosts: {ghost_count}", 20, 50,
                       font_small, COLOR_TEXT)
-            draw_text(screen, f"REC: {recorder.length}", 20, 80,
-                      font_small, COLOR_TEXT_DIM)
+            if best_score > 0:
+                draw_text(screen, f"Best: {best_score:.1f}s", 20, 80,
+                          font_small, COLOR_TEXT_DIM)
 
             # Seed timer warning (first run only, last 5 seconds)
             if len(ghosts) == 0 and game_time >= SEED_GHOST_TIMER - 5:
@@ -187,19 +216,65 @@ def main():
                 screen.blit(flash_surface, (0, 0))
 
         elif state == GameState.GAME_OVER:
+            # Dark background
             screen.fill((10, 10, 10))
+
+            # Semi-transparent overlay panel
+            panel_width, panel_height = 400, 280
+            panel_x = (WINDOW_WIDTH - panel_width) // 2
+            panel_y = (WINDOW_HEIGHT - panel_height) // 2
+            panel_surface = pygame.Surface((panel_width, panel_height), pygame.SRCALPHA)
+            panel_surface.fill((0, 0, 0, 180))
+            screen.blit(panel_surface, (panel_x, panel_y))
+
+            # Panel border
+            pygame.draw.rect(screen, COLOR_ACCENT,
+                           (panel_x, panel_y, panel_width, panel_height), 2)
+
+            # Text content
+            center_x = WINDOW_WIDTH // 2
             draw_text(screen, "GAME OVER",
-                      WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 60,
+                      center_x, panel_y + 50,
                       font_title, COLOR_ACCENT, center=True)
             draw_text(screen, f"Survived: {game_time:.1f}s",
-                      WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 10,
+                      center_x, panel_y + 120,
                       font_medium, COLOR_TEXT, center=True)
             draw_text(screen, f"Ghosts: {ghost_count}",
-                      WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 50,
+                      center_x, panel_y + 160,
                       font_medium, COLOR_TEXT, center=True)
-            draw_text(screen, "Press SPACE to restart",
-                      WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 100,
+            if best_score > 0:
+                draw_text(screen, f"Best: {best_score:.1f}s",
+                          center_x, panel_y + 200,
+                          font_medium, COLOR_TEXT_DIM, center=True)
+            draw_text(screen, "SPACE to Restart | ESC to Menu",
+                      center_x, panel_y + 250,
                       font_small, COLOR_TEXT_DIM, center=True)
+
+        elif state == GameState.PAUSED:
+            # Render frozen game frame
+            arena.render(screen, camera_offset)
+            for ghost in ghosts:
+                ghost.render(screen, camera_offset)
+            player.render(screen, camera_offset)
+
+            # Dark overlay
+            overlay = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, 150))
+            screen.blit(overlay, (0, 0))
+
+            # Pause text
+            draw_text(screen, "PAUSED",
+                      WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 60,
+                      font_title, COLOR_PLAYER, center=True)
+            draw_text(screen, "ESC to Resume",
+                      WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 20,
+                      font_small, COLOR_TEXT, center=True)
+            draw_text(screen, "R to Restart",
+                      WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 50,
+                      font_small, COLOR_TEXT, center=True)
+            draw_text(screen, "Q to Quit",
+                      WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 80,
+                      font_small, COLOR_TEXT, center=True)
 
         pygame.display.flip()
 

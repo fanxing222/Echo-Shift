@@ -1,5 +1,5 @@
 # core/game_state.py
-# Simple enum for the four game states.
+# Game states enum.
 
 from enum import Enum
 
@@ -9,3 +9,4 @@ class GameState(Enum):
     PLAYING = 2
     DYING = 3
     GAME_OVER = 4
+    PAUSED = 5
