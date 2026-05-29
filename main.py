@@ -1,7 +1,8 @@
 # main.py
 # Echo Shift — main entry point and game loop.
+# Works on desktop (python main.py) and in browser (pygbag).
 
-import sys
+import asyncio
 import random
 import pygame
 
@@ -20,7 +21,7 @@ from core.recorder import RunRecorder
 from core.ghost import Ghost
 
 
-def main():
+async def main():
     # --- Init ---
     pygame.init()
     screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
@@ -71,11 +72,13 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+                break
 
             if event.type == pygame.KEYDOWN:
                 # Q — quit from any state
                 if event.key == pygame.K_q:
                     running = False
+                    break
 
                 # R — restart from any state (except MENU)
                 if event.key == pygame.K_r:
@@ -86,6 +89,7 @@ def main():
                 if event.key == pygame.K_ESCAPE:
                     if state == GameState.MENU:
                         running = False
+                        break
                     elif state == GameState.PLAYING:
                         state = GameState.PAUSED
                     elif state == GameState.PAUSED:
@@ -157,9 +161,12 @@ def main():
             draw_text(screen, "Press SPACE to Start",
                       WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 60,
                       font_medium, COLOR_TEXT, center=True)
+            draw_text(screen, "Click game window before using keyboard",
+                      WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 100,
+                      font_small, COLOR_TEXT_DIM, center=True)
             if best_score > 0:
                 draw_text(screen, f"Best: {best_score:.1f}s",
-                          WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 110,
+                          WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 140,
                           font_small, COLOR_TEXT_DIM, center=True)
 
         elif state == GameState.PLAYING:
@@ -276,10 +283,10 @@ def main():
                       font_small, COLOR_TEXT, center=True)
 
         pygame.display.flip()
+        await asyncio.sleep(0)  # yield to browser event loop (pygbag)
 
     pygame.quit()
-    sys.exit()
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

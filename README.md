@@ -1,101 +1,81 @@
 # Echo Shift
 
-A minimalist sci-fi survival arcade game where your past actions become future enemies.
+A replay survival game built with pygame-ce & pygbag — your past movements become your future enemies.
 
-## Gameplay
+## Features
 
-Each run records your movement. When you die, that recording becomes a "Ghost Echo" that replays your exact path in all future runs. Survive as long as possible while the arena fills with echoes of your past behavior.
+- **Ghost Replay System** — Each death records your movement as a lethal "Ghost Echo"
+- **Segmented Timeline Replay** — Ghosts replay distinct 5-second segments of past runs
+- **Deterministic Gameplay** — Same inputs always produce the same outcome
+- **Browser Playable Build** — Runs in the browser via pygbag (WebAssembly)
+- **Pause / Restart System** — Full game state management (menu, playing, paused, game over)
 
-### Core Mechanics
+## Technologies
 
-- **Movement Recording** — Every run records your exact positions
-- **Ghost Echoes** — Past recordings become lethal enemies
-- **Increasing Difficulty** — More deaths = more ghosts = harder survival
-- **Time Pressure** — First death is forced after 30 seconds if you survive that long
+- Python 3.8+
+- [pygame-ce](https://github.com/pygame-community/pygame-ce)
+- [pygbag](https://github.com/pygame-web/pygbag) (WebAssembly deployment)
 
 ## Controls
 
 | Key | Action |
 |-----|--------|
-| `WASD` | Move |
+| `WASD` / Arrow Keys | Move |
 | `SPACE` | Start / Restart |
-| `ESC` | Quit |
+| `ESC` | Pause / Quit to Menu |
+| `R` | Restart (during gameplay) |
+| `Q` | Quit |
 
-## Installation
+## Run Locally
 
-### Prerequisites
-
-- Python 3.8+
-- pip
-
-### Setup
+**Desktop:**
 
 ```bash
-# Clone the repository
-git clone https://github.com/fanxing222/Echo-Shift.git
-cd Echo-Shift
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run the game
 python main.py
 ```
+
+**Web (local browser):**
+
+```bash
+python build_web.py --serve
+```
+
+## Web Demo
+
+> **Live demo:** [COMING SOON — Vercel deployment link]
+
+## Screenshots
+
+> **Screenshots:** [COMING SOON]
+
+## Algorithm Overview
+
+The core mechanic is built on three systems:
+
+1. **Trajectory Recording** — Player positions are sampled every 2 frames (30 FPS) and stored as `(x, y)` coordinate lists
+2. **Replay Playback** — On death, the recording is saved. In the next run, a Ghost replays those positions using linear interpolation between frames
+3. **Segmented Replay** — Each Ghost is assigned a 5-second segment of the full recording (Ghost 0 = 0–5s, Ghost 1 = 5–10s, etc.), creating diverse movement patterns from a single run
 
 ## Project Structure
 
 ```
 Echo Shift/
 ├── main.py              # Entry point, game loop, state machine
-├── requirements.txt     # Python dependencies
-├── LICENSE              # MIT License
-├── README.md            # This file
-├── assets/              # Fonts, sounds (future)
+├── build_web.py         # Web build script (pygbag)
+├── requirements.txt     # Dependencies
 ├── core/
-│   ├── __init__.py
-│   ├── settings.py      # All constants and configuration
-│   ├── player.py        # Player class
-│   ├── ghost.py         # Ghost class
-│   ├── recorder.py      # RunRecorder class
-│   ├── collision.py     # Collision detection
+│   ├── settings.py      # Game constants
+│   ├── player.py        # Player movement & rendering
+│   ├── ghost.py         # Ghost replay logic
+│   ├── recorder.py      # Position recording system
+│   ├── collision.py     # AABB collision detection
 │   ├── game_state.py    # GameState enum
-│   └── utils.py         # Utility functions
-└── levels/
-    ├── __init__.py
-    └── arena.py         # Arena boundaries and rendering
+│   └── utils.py         # Helpers
+├── levels/
+│   └── arena.py         # Arena rendering
+└── build/web/           # Browser build output (index.html + wasm)
 ```
-
-## Technical Details
-
-- **Framework:** pygame-ce
-- **Resolution:** 1280×720
-- **FPS:** 60
-- **Recording:** 30 FPS (every 2 frames)
-- **Max Recording:** 5 minutes per run
-
-## Game States
-
-```
-MENU ──(SPACE)──▶ PLAYING ──(collision)──▶ DYING ──(0.3s)──▶ GAME_OVER
-  ▲                                                            │
-  └──────────────────────────(SPACE)───────────────────────────┘
-```
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- Built with [pygame-ce](https://github.com/pygame-community/pygame-ce)
-- Inspired by time-loop and echo mechanics in games
+MIT License — see [LICENSE](LICENSE) for details.
